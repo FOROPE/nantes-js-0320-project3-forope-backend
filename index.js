@@ -1,9 +1,11 @@
 const express = require('express');
+const cors = require('cors')
 const app = express();
 const port = 5000;
 
 const connection = require('./config');
 
+app.use(cors())
 
 app.use(express.json());
 app.use(express.urlencoded({
@@ -15,7 +17,7 @@ app.get('/', (request, response) => {
 });
 
 app.get('/form', (req, res) => {
-  connection.query('SELECT * from clients', (err, results) => {
+  connection.query('SELECT * from user', (err, results) => {
     if (err) {
       res.status(500).send('Erreur lors de la récupération des données');
     } else {
@@ -27,12 +29,13 @@ app.get('/form', (req, res) => {
 
 app.post('/form', (req, res) => {
   const formData = req.body;
-  connection.query('INSERT INTO clients SET ?', formData, (err, results) => {
+  formData.Status = 'A rappeler';
+  connection.query('INSERT INTO user SET ?', formData, (err, results) => {
     if (err) {
       console.log(err);
-      res.status(500).send("Erreur lors de l'enregistrement de vos données");
+      res.status(500).json({message: "Erreur lors de l'enregistrement de vos données", error: err});
     } else {
-      res.sendStatus(200);
+      res.sendStatus(201);
     }
   });
 });
