@@ -21,12 +21,10 @@ app.get("/", (request, response) => {
 app.get("/form", (req, res) => {
   connection.query("SELECT * from user", (err, results) => {
     if (err) {
-      res
-        .status(500)
-        .json({
-          message: "Erreur lors de l'enregistrement de vos données",
-          error: err,
-        });
+      res.status(500).json({
+        message: "Erreur lors de l'enregistrement de vos données",
+        error: err,
+      });
     } else {
       res.json(results);
     }
@@ -39,16 +37,49 @@ app.post("/form", (req, res) => {
   connection.query("INSERT INTO user SET ?", formData, (err, results) => {
     if (err) {
       console.log(err);
-      res
-        .status(500)
-        .json({
-          message: "Erreur lors de l'enregistrement de vos données",
-          error: err,
-        });
+      res.status(500).json({
+        message: "Erreur lors de l'enregistrement de vos données",
+        error: err,
+      });
     } else {
       res.sendStatus(201);
     }
   });
+});
+
+app.delete("/form/:id", (req, res) => {
+  const idUser = req.params.id;
+  connection.query("DELETE FROM user WHERE id= ?", idUser, (err) => {
+    if (err) {
+      res.status(500).json({
+        message: "erreur",
+        error: err,
+      });
+    } else {
+      res.sendStatus(201);
+    }
+  });
+});
+
+app.put("/form/:id", (req, res) => {
+  const idUser = req.params.id;
+  const formData = req.body;
+  formData.Status = "A rappeler";
+  connection.query(
+    "UPDATE user SET ? WHERE id= ?",
+    [formData, idUser],
+    (err, results) => {
+      if (err) {
+        console.log(err);
+        res.status(500).json({
+          message: "Erreur lors de l'enregistrement de vos données",
+          error: err,
+        });
+      } else {
+        res.sendStatus(201);
+      }
+    }
+  );
 });
 
 app.listen(port, (err) => {
