@@ -33,7 +33,7 @@ app.get("/form", (req, res) => {
 
 app.post("/form", (req, res) => {
   const formData = req.body;
-  formData.Status = "A rappeler";
+  formData.status = "A rappeler";
   connection.query("INSERT INTO user SET ?", formData, (err, results) => {
     if (err) {
       console.log(err);
