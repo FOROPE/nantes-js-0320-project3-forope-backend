@@ -23,35 +23,67 @@ app.use(
 const users = [];
 
 app.get("/users", (req, res) => {
-  res.json(users);
+  connection.query("SELECT * from user", (err, results) => {
+    if (err) {
+      res.status(500).json({
+        message: "Erreur lors de l'enregistrement de vos données",
+        error: err,
+      });
+    } else {
+      res.json(results);
+    }
+  });
 });
 
 app.post("/users", async (req, res) => {
   try {
     const salt = await bcrypt.genSalt();
     const hashedPassword = await bcrypt.hash(req.body.password, salt);
-    const user = { name: req.body.name, password: hashedPassword };
-    users.push(user);
-    res.status(201).send();
+    const formData = req.body;
+    formData.password = hashedPassword;
+    formData.role = "admin";
+    connection.query("INSERT INTO user SET ?", formData, (err, results) => {
+      if (err) {
+        console.log(err);
+        res.status(500).json({
+          message: "Erreur lors de l'enregistrement de vos données",
+          error: err,
+        });
+      } else {
+        res.sendStatus(201);
+      }
+    });
   } catch {
     res.status(500).send();
   }
 });
 
 app.post("/users/login", async (req, res) => {
-  const user = users.find((user) => (user.name = req.body.name));
-  if (user == null) {
-    return res.status(400).send("cannot find user");
-  }
-  try {
-    if (await bcrypt.compare(req.body.password, user.password)) {
-      res.send("success");
-    } else {
-      res.send("not allowed");
+  const user = req.body.username;
+  connection.query(
+    "SELECT username from user where username= ?",
+    user,
+    (req, res) => {
+      if (null) {
+        return res.status(400).send("cannot find user");
+      } else {
+        return res.status(200).send("ok");
+      }
     }
-  } catch {
-    res.status(500).send();
-  }
+  );
+  // const user = users.find((user) => (user.name = req.body.name));
+  // if (user == null) {
+  //   return res.status(400).send("cannot find user");
+  // }
+  // try {
+  //   if (await bcrypt.compare(req.body.password, user.password)) {
+  //     res.send("success");
+  //   } else {
+  //     res.send("not allowed");
+  //   }
+  // } catch {
+  //   res.status(500).send();
+  // }
 });
 
 app.get("/", (request, response) => {
