@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const app = express();
 const port = 5000;
+const { authToken } = require("./middlewares");
 
 const connection = require("./config");
 
@@ -22,7 +23,7 @@ app.use(
 
 const users = [];
 
-app.get("/users", (req, res) => {
+app.get("/users", authToken("admin"), (req, res) => {
   connection.query("SELECT * from user", (err, results) => {
     if (err) {
       res.status(500).json({
@@ -59,31 +60,47 @@ app.post("/users", async (req, res) => {
 });
 
 app.post("/users/login", async (req, res) => {
-  const user = req.body.username;
   connection.query(
-    "SELECT username from user where username= ?",
-    user,
-    (req, res) => {
-      if (null) {
-        return res.status(400).send("cannot find user");
-      } else {
-        return res.status(200).send("ok");
+    "SELECT * from user WHERE username= ?",
+    req.body.username,
+    (err, result) => {
+      if (err) {
+        throw err;
+        return res.status(400).send({ msg: err });
       }
+      if (!result.length) {
+        return res.status(401).send({ msg: "Username is incorrect" });
+      }
+
+      bcrypt.compare(req.body.password, result[0].password, (bErr, bResult) => {
+        let bool = bcrypt.compareSync(req.body.password, result[0].password);
+        console.log(bool);
+        console.log(result[0].password);
+        console.log(req.body.password);
+        if (bool == false) {
+          return res.status(401).send({ msg: "password is incorrect" });
+        }
+        if (bool == true) {
+          const token = jwt.sign(
+            {
+              username: result[0].username,
+              role: result[0].role,
+              id: result[0].id,
+            },
+            process.env.ACCESS_TOKEN_SECRET,
+            {
+              expiresIn: 50,
+            }
+          );
+          return res.status(200).send({
+            token,
+            msg: "logged in",
+            user: result[0],
+          });
+        }
+      });
     }
   );
-  // const user = users.find((user) => (user.name = req.body.name));
-  // if (user == null) {
-  //   return res.status(400).send("cannot find user");
-  // }
-  // try {
-  //   if (await bcrypt.compare(req.body.password, user.password)) {
-  //     res.send("success");
-  //   } else {
-  //     res.send("not allowed");
-  //   }
-  // } catch {
-  //   res.status(500).send();
-  // }
 });
 
 app.get("/", (request, response) => {
